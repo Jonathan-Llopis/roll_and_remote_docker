@@ -1,3 +1,5 @@
+version: "3.6"
+
 services:
   web_server:
     build: .
@@ -7,16 +9,16 @@ services:
       - database
       - mongodb
       #- redis
-    container_name: 2dam-inventory-webserver
+    container_name: roll_and_reserve_webserver
     working_dir: /web
     command: pm2-runtime start pm2.json
     volumes:
-      - ./2dam_inventory:/web
+      - ./roll_and_reserve_:/web
     environment:
       - TZ=Europe/Berlin
   database:
     image: yobasystems/alpine-mariadb:10.11.8
-    container_name: 2dam-inventory-db
+    container_name: roll_and_reserve_db
     ports:
       - "2222:3306"
     #restart: always
@@ -27,15 +29,36 @@ services:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - TZ=Europe/Berlin
     volumes:
-     - ./data/db/mysql:/var/lib/mysql
+      - ./data/db/mysql:/var/lib/mysql
     # - ./mysql.cnf:/etc/mysql/my.cnf
   mongodb:
+    container_name: roll_and_reserve_mongodb
     image: mongo:noble
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
     volumes:
       - ./data/mongo-data:/data/db
-  #redis: 
+
+  app:
+    container_name: roll_and_reserve_app
+    build:
+      context: "."
+      dockerfile: Dockerfile
+    image: "flutter:latest"
+    working_dir: "/app"
+    depends_on:
+      - emulator
+    volumes:
+      - './:/app'
+
+  emulator:
+    image: us-docker.pkg.dev/android-emulator-268719/images/30-google-x64:30.1.2
+    expose:
+      - 8554/tcp
+      - 5555/tcp
+    devices:
+      - "/dev/kvm:/dev/kvm"
+  #redis:
   #  image: 'redis'
   #  container_name: 2dam-inventory-redis
